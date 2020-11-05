@@ -10,6 +10,27 @@ namespace Cobros_P2.BLL
 {
     public class VentasBLL
     {
+
+        public static Ventas Buscar(int id)
+        {
+            Ventas venta = new Ventas();
+            Contexto contexto = new Contexto();
+
+            try
+            {
+                venta = contexto.Ventas.Find(id);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                contexto.Dispose();
+            }
+            return venta;
+        }
+
         public static List<Ventas> GetList(Expression<Func<Ventas, bool>> venta)
         {
             List<Ventas> Lista = new List<Ventas>();

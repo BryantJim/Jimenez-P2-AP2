@@ -12,20 +12,21 @@
 
             <div class="card-body">
                 <form>
-                    
+
                     @*Primera parte*@
                     <div class="form-group">
                         <div class="form-group col-6" style="float:left;">
                             <label> Mora Id</label>
                             <div class="input-group">
-                                <InputNumber @bind-Value="cobro.CobroId" class="form-control col-4" />
+                                <InputNumber @bind-Value="cobro.CobroId" class="form-control col-5" />
                                 <div class="input-group-append">
                                     <button type="button" class="btn btn-secondary input-group-text oi oi-magnifying-glass" @onclick="Buscar">Buscar</button>
                                 </div>
+                                <ValidationMessage For="@(() => cobro.CobroId)" />
                             </div>
                         </div>
 
-                        <div class="form-group col-5" style="float:right;">
+                        <div class="form-group col-6" style="float:right;">
                             <label>Fecha</label>
                             <div class="input-group">
                                 <InputDate @bind-Value="cobro.Fecha" class="form-control" />
@@ -36,10 +37,68 @@
 
                     <div class="form-group">
                         <label>Cliente ID</label>
-                        <select class="form-control">
-                            <option value="1">Estoy vivo</option>
+                        <select @bind="ClienteSeleccionado" class="form-control" @onblur="LlenarLista">
+                            <option value="0" disabled selected>Seleccione un cliente</option>
+                            @foreach (var item in ListaC)
+                            {
+                                <option value="@item.ClienteId">@item.Nombres</option>
+                            }
                         </select>
                     </div>
+
+
+                    <div class="form-group">
+                        <label>Facturas Pendientes</label>
+
+                        <div class="table-responsive text-nowrap" style="position: relative; height:200px; overflow: auto; display: block;">
+                            <table class="table table-striped">
+                                <thead style="background-color: gray;">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Monto</th>
+                                        <th>Balance</th>
+                                        <th>Cobrado</th>
+                                        <th>Pagar</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody style="background-color: white;">
+                                    @foreach (var item in ListaV)
+                                    {
+
+                                        <tr>
+                                            <td>@item.VentaId</td>
+                                            <td>@item.Fecha.ToString("d")</td>
+                                            <td>@item.Monto</td>
+                                            <td>@item.Balance</td>
+                                            <td>@ObtenerBalance(item)</td>
+                                            <td><button type="button" @onclick="() => Agregar(item)">Pago</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-group col-6" style="float:left;">
+                            <label>Totales</label>
+                            <InputNumber @bind-Value="Totales" class="form-control" readOnly="true" />
+                        </div>
+
+                        <div class="form-group col-6" style="float:right;">
+                            <label>Total cobrado</label>
+                            <InputNumber @bind-Value="cobro.TotalCobrado" class="form-control" readOnly="true" />
+                            <ValidationMessage For="@(() => cobro.TotalCobrado)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group ">
+                        <label>Observaciones</label>
+                        <InputText @bind-Value="cobro.Observaciones" class="form-control" style="height:150px;"/>
+                    </div>
+
 
                 </form>
             </div>
@@ -57,23 +116,86 @@
 @code {
     Cobros cobro = new Cobros();
 
+    List<Clientes> ListaC = new List<Clientes>();
+    List<Ventas> ListaV = new List<Ventas>();
+
+    int ClienteSeleccionado;
+    int Totales = 0;
+    bool Activo;
+
+    protected override void OnInitialized()
+    {
+        Nuevo();
+    }
+
     private void Nuevo()
     {
-
+        cobro = new Cobros();
+        ListaC = ListaC = ClientesBLL.GetList(c => true);
+        ListaV = new List<Ventas>();
+        Totales = 0;
     }
 
     private void Guardar()
     {
+        bool guardado;
 
+        guardado = CobrosBLL.Guardar(cobro);
+
+        if (guardado)
+            Nuevo();
     }
 
     private void Buscar()
     {
+        var Cobro = CobrosBLL.Buscar(cobro.CobroId);
 
+        if (Cobro != null)
+            this.cobro = Cobro;
     }
 
     private void Eliminar()
     {
 
     }
+
+    private void Agregar(Ventas venta)
+    {
+        CobrosDetalle cobroDetalle = new CobrosDetalle();
+        cobroDetalle.CobroId = cobro.CobroId;
+        cobroDetalle.VentaId = venta.VentaId;
+        cobroDetalle.Cobrado = venta.Balance;
+        if (cobro.Detalle.Exists(c => c.VentaId == venta.VentaId))
+        {
+            cobro.Detalle.Remove(cobroDetalle);
+        }
+        else
+        {
+            cobro.Detalle.Add(cobroDetalle);
+            cobro.TotalCobrado += venta.Balance;
+            Totales +=1;
+        }
+    }
+
+    private void LlenarLista()
+    {
+        ListaV = VentasBLL.GetList(c => c.ClienteId == ClienteSeleccionado);
+    }
+
+    private double ObtenerBalance(Ventas venta)
+    {
+        double monto = 0;
+
+        if (cobro.Detalle.Exists(c => c.VentaId == venta.VentaId))
+        {
+            monto = venta.Balance;
+        }
+        else
+        {
+            monto = 0;
+        }
+
+        return monto;
+    }
+
 }

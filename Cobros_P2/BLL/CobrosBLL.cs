@@ -46,6 +46,12 @@ namespace Cobros_P2.BLL
 
             try
             {
+                foreach(var item in cobro.Detalle)
+                {
+                    var Venta = contexto.Ventas.Find(item.VentaId);
+                    Venta.Balance -= item.Cobrado;
+                    contexto.Entry(Venta).State = EntityState.Modified;
+                }
                 contexto.Cobros.Add(cobro);
                 Insertado = (contexto.SaveChanges() > 0);
             }

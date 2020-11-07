@@ -110,7 +110,7 @@
             <div class="card-footer">
                 <div class="form-group text-center" display: inline-block>
                     <button type="button" class="btn btn-lg btn-primary oi oi-file" @onclick="Nuevo">Nuevo</button>
-                    <button type="submit" class="btn btn-lg btn-success oi oi-cloud-upload">Guardar</button>
+                    <button type="submit" name="Guardado" class="btn btn-lg btn-success oi oi-cloud-upload">Guardar</button>
                     <button type="button" class="btn btn-lg btn-danger oi oi-trash" @onclick="Eliminar">Eliminar</button>
                 </div>
             </div>
@@ -158,18 +158,22 @@
     private void Guardar()
     {
         bool guardado;
-
-        cobro.Detalle.RemoveAll(d => d.Cobrado == 0);
-
-        guardado = CobrosBLL.Guardar(cobro);
-
-        if (guardado)
+        if (cobro.CobroId == 0)
         {
-            Toast.ShowSuccess("Guardado correctamente");
-            Nuevo();
+            cobro.Detalle.RemoveAll(d => d.Cobrado == 0);
+
+            guardado = CobrosBLL.Guardar(cobro);
+
+            if (guardado)
+            {
+                Toast.ShowSuccess("Guardado correctamente");
+                Nuevo();
+            }
+            else
+                Toast.ShowError("No se pudo guardar correctamente");
         }
         else
-            Toast.ShowError("No se pudo guardar correctamente");
+            Toast.ShowWarning("No puede modificar el cobro");
 
     }
 

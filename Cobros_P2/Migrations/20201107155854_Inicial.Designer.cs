@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cobros_P2.Migrations
 {
     [DbContext(typeof(Contexto))]
-    [Migration("20201104163740_Inicial")]
+    [Migration("20201107155854_Inicial")]
     partial class Inicial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -66,9 +66,6 @@ namespace Cobros_P2.Migrations
 
                     b.Property<double>("TotalCobrado")
                         .HasColumnType("REAL");
-
-                    b.Property<int>("Totales")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("CobroId");
 

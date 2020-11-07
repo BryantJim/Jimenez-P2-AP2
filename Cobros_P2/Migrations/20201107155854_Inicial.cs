@@ -28,7 +28,6 @@ namespace Cobros_P2.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Fecha = table.Column<DateTime>(nullable: false),
                     ClienteId = table.Column<int>(nullable: false),
-                    Totales = table.Column<int>(nullable: false),
                     TotalCobrado = table.Column<double>(nullable: false),
                     Observaciones = table.Column<string>(nullable: true)
                 },

@@ -65,9 +65,6 @@ namespace Cobros_P2.Migrations
                     b.Property<double>("TotalCobrado")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("Totales")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("CobroId");
 
                     b.ToTable("Cobros");

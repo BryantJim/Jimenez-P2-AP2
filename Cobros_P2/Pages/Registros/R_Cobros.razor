@@ -1,5 +1,6 @@
 ﻿@page "/Cobros"
 
+@inject IToastService Toast
 
 <EditForm Model="cobro" OnValidSubmit="Guardar">
     <DataAnnotationsValidator />
@@ -37,9 +38,9 @@
 
                     <div class="form-group">
                         <label>Cliente ID</label>
-                        <select @bind="ClienteSeleccionado" class="form-control" @onblur="LlenarLista">
+                        <select @bind="cobro.ClienteId" class="form-control" @onblur="ObtenerVentasPendientes">
                             <option value="0" disabled selected>Seleccione un cliente</option>
-                            @foreach (var item in ListaC)
+                            @foreach (var item in ClienteList)
                             {
                                 <option value="@item.ClienteId">@item.Nombres</option>
                             }
@@ -64,16 +65,16 @@
                                     </tr>
                                 </thead>
                                 <tbody style="background-color: white;">
-                                    @foreach (var item in ListaV)
+                                    @foreach (var item in cobro.Detalle)
                                     {
 
                                         <tr>
                                             <td>@item.VentaId</td>
-                                            <td>@item.Fecha.ToString("d")</td>
-                                            <td>@item.Monto</td>
-                                            <td>@item.Balance</td>
-                                            <td>@ObtenerBalance(item)</td>
-                                            <td><button type="button" @onclick="() => Agregar(item)">Pago</button></td>
+                                            <td>@item.Venta.Fecha.ToString("dd/MM/yyyy")</td>
+                                            <td>@item.Venta.Monto.ToString("N2")</td>
+                                            <td>@item.Venta.Balance.ToString("N2")</td>
+                                            <td>@item.Cobrado.ToString("N2")</td>
+                                            <td> <input type="checkbox" @onchange="@(() => Cobrar(item))"/> </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -81,13 +82,13 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <div class="form-group col-6" style="float:left;">
+                    <div class=" form-group form-inline">
+                        <div class="form-group col-6" >
                             <label>Totales</label>
-                            <InputNumber @bind-Value="Totales" class="form-control" readOnly="true" />
+                            <span class="form-control">@cobro.Detalle.Count()</span>
                         </div>
 
-                        <div class="form-group col-6" style="float:right;">
+                        <div class="form-group col-6">
                             <label>Total cobrado</label>
                             <InputNumber @bind-Value="cobro.TotalCobrado" class="form-control" readOnly="true" />
                             <ValidationMessage For="@(() => cobro.TotalCobrado)" />
@@ -96,7 +97,7 @@
 
                     <div class="form-group ">
                         <label>Observaciones</label>
-                        <InputText @bind-Value="cobro.Observaciones" class="form-control" style="height:150px;"/>
+                        <textarea @bind="cobro.Observaciones" class="form-control" row="5" placeholder="Observaciones"/>
                     </div>
 
 
@@ -116,12 +117,8 @@
 @code {
     Cobros cobro = new Cobros();
 
-    List<Clientes> ListaC = new List<Clientes>();
-    List<Ventas> ListaV = new List<Ventas>();
-
-    int ClienteSeleccionado;
-    int Totales = 0;
-    bool Activo;
+    List<Clientes> ClienteList = new List<Clientes>();
+    List<Ventas> VentaList = new List<Ventas>();
 
     protected override void OnInitialized()
     {
@@ -131,19 +128,27 @@
     private void Nuevo()
     {
         cobro = new Cobros();
-        ListaC = ListaC = ClientesBLL.GetList(c => true);
-        ListaV = new List<Ventas>();
-        Totales = 0;
+        ClienteList = ClientesBLL.GetList(c => true);
+        VentaList = new List<Ventas>();
+        cobro.Fecha = DateTime.Now;
     }
 
     private void Guardar()
     {
         bool guardado;
 
+        cobro.Detalle.RemoveAll(d => d.Cobrado == 0);
+
         guardado = CobrosBLL.Guardar(cobro);
 
         if (guardado)
+        {
+            Toast.ShowSuccess("Guardado correctamente");
             Nuevo();
+        }
+        else
+            Toast.ShowError("No se pudo guardar correctamente");
+
     }
 
     private void Buscar()
@@ -152,50 +157,41 @@
 
         if (Cobro != null)
             this.cobro = Cobro;
+        else
+            Toast.ShowError("El cobro no existe");
     }
 
     private void Eliminar()
     {
+        bool elimino;
 
+        elimino = CobrosBLL.Eliminar(cobro.CobroId);
+
+        if (elimino)
+        {
+            Nuevo();
+            Toast.ShowSuccess("Eliminado correctamente");
+        }
+        else
+            Toast.ShowError("No fue posible eliminar");
     }
 
-    private void Agregar(Ventas venta)
+    private void Cobrar(CobrosDetalle cobroDetalle)
     {
-        CobrosDetalle cobroDetalle = new CobrosDetalle();
-        cobroDetalle.CobroId = cobro.CobroId;
-        cobroDetalle.VentaId = venta.VentaId;
-        cobroDetalle.Cobrado = venta.Balance;
-        if (cobro.Detalle.Exists(c => c.VentaId == venta.VentaId))
+        if (cobroDetalle.Cobrado == 0)
         {
-            cobro.Detalle.Remove(cobroDetalle);
+            cobroDetalle.Cobrado = cobroDetalle.Venta.Balance;
+            cobro.TotalCobrado += cobroDetalle.Cobrado;
         }
         else
         {
-            cobro.Detalle.Add(cobroDetalle);
-            cobro.TotalCobrado += venta.Balance;
-            Totales +=1;
+            cobroDetalle.Cobrado = 0;
+            cobro.TotalCobrado -= cobroDetalle.Venta.Balance;
         }
     }
 
-    private void LlenarLista()
+    private async Task ObtenerVentasPendientes()
     {
-        ListaV = VentasBLL.GetList(c => c.ClienteId == ClienteSeleccionado);
+        cobro.Detalle = await VentasBLL.GetVentasPendiente(cobro.ClienteId);
     }
-
-    private double ObtenerBalance(Ventas venta)
-    {
-        double monto = 0;
-
-        if (cobro.Detalle.Exists(c => c.VentaId == venta.VentaId))
-        {
-            monto = venta.Balance;
-        }
-        else
-        {
-            monto = 0;
-        }
-
-        return monto;
-    }
-
 }

@@ -1,5 +1,6 @@
 ﻿using Cobros_P2.DAL;
 using Cobros_P2.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,29 @@ namespace Cobros_P2.BLL
                 contexto.Dispose();
             }
             return Lista;
+        }
+
+        public static async Task<List<CobrosDetalle>> GetVentasPendiente(int clienteId)
+        {
+            var pendientes = new List<CobrosDetalle>();
+            Contexto contexto = new Contexto();
+
+            var ventas = await contexto.Ventas
+                .Where(v => v.ClienteId == clienteId && v.Balance > 0)
+                .AsNoTracking()
+                .ToListAsync();
+
+            foreach(var item in ventas)
+            {
+                pendientes.Add(new CobrosDetalle
+                {
+                    VentaId = item.VentaId,
+                    Venta = item,
+                    Cobrado = 0
+                });
+            }
+
+            return pendientes;
         }
     }
 }

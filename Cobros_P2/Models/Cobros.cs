@@ -11,7 +11,7 @@ namespace Cobros_P2.Models
         public int CobroId { get; set; }
         public DateTime Fecha { get; set; }
         public int ClienteId { get; set; }
-        public int Totales { get; set; }
+        [Range(minimum: 1, maximum: int.MaxValue, ErrorMessage = "Debe realizar un cobro")]
         public double TotalCobrado { get; set; }
         public string Observaciones { get; set; }
         

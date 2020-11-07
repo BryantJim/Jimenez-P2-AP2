@@ -67,7 +67,6 @@
                                 <tbody style="background-color: white;">
                                     @foreach (var item in cobro.Detalle)
                                     {
-
                                         <tr>
                                             <td>@item.VentaId</td>
                                             <td>@item.Venta.Fecha.ToString("dd/MM/yyyy")</td>
@@ -118,7 +117,7 @@
     Cobros cobro = new Cobros();
 
     List<Clientes> ClienteList = new List<Clientes>();
-    List<Ventas> VentaList = new List<Ventas>();
+    List<CobrosDetalle> VentaList = new List<CobrosDetalle>();
 
     protected override void OnInitialized()
     {
@@ -129,7 +128,7 @@
     {
         cobro = new Cobros();
         ClienteList = ClientesBLL.GetList(c => true);
-        VentaList = new List<Ventas>();
+        VentaList = new List<CobrosDetalle>();
         cobro.Fecha = DateTime.Now;
     }
 
@@ -151,9 +150,11 @@
 
     }
 
-    private void Buscar()
+    private async Task Buscar()
     {
         var Cobro = CobrosBLL.Buscar(cobro.CobroId);
+
+        Cobro.Detalle = await VentasBLL.GetVentasCobradas(Cobro.ClienteId);
 
         if (Cobro != null)
             this.cobro = Cobro;
@@ -192,6 +193,7 @@
 
     private async Task ObtenerVentasPendientes()
     {
-        cobro.Detalle = await VentasBLL.GetVentasPendiente(cobro.ClienteId);
+        if(cobro.CobroId == 0)
+            cobro.Detalle = await VentasBLL.GetVentasPendiente(cobro.ClienteId);
     }
 }

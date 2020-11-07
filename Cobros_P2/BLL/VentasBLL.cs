@@ -74,5 +74,28 @@ namespace Cobros_P2.BLL
 
             return pendientes;
         }
+
+        public static async Task<List<CobrosDetalle>> GetVentasCobradas(int clienteId)
+        {
+            var pendientes = new List<CobrosDetalle>();
+            Contexto contexto = new Contexto();
+
+            var ventas = await contexto.Ventas
+                .Where(v => v.ClienteId == clienteId && v.Balance == 0)
+                .AsNoTracking()
+                .ToListAsync();
+
+            foreach (var item in ventas)
+            {
+                pendientes.Add(new CobrosDetalle
+                {
+                    VentaId = item.VentaId,
+                    Venta = item,
+                    Cobrado = 0
+                });
+            }
+
+            return pendientes;
+        }
     }
 }

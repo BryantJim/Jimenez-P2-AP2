@@ -1,4 +1,5 @@
 ﻿@page "/Cobros"
+@page "/Cobros/{cobroId:int}"
 
 @inject IToastService Toast
 
@@ -15,11 +16,12 @@
                 <form>
 
                     @*Primera parte*@
-                    <div class="form-group">
-                        <div class="form-group col-6" style="float:left;">
-                            <label> Mora Id</label>
+                    <div class="form-group form-inline">
+                        <div class="form-group col-6">
+                            <label> Cobro Id </label>
+                            &nbsp;
                             <div class="input-group">
-                                <InputNumber @bind-Value="cobro.CobroId" class="form-control col-5" />
+                                <InputNumber @bind-Value="cobro.CobroId" class="form-control col-6" />
                                 <div class="input-group-append">
                                     <button type="button" class="btn btn-secondary input-group-text oi oi-magnifying-glass" @onclick="Buscar">Buscar</button>
                                 </div>
@@ -27,8 +29,9 @@
                             </div>
                         </div>
 
-                        <div class="form-group col-6" style="float:right;">
+                        <div class="form-group col-6">
                             <label>Fecha</label>
+                            &nbsp;
                             <div class="input-group">
                                 <InputDate @bind-Value="cobro.Fecha" class="form-control" />
                                 <ValidationMessage For="@(() => cobro.Fecha)" />
@@ -82,13 +85,15 @@
                     </div>
 
                     <div class=" form-group form-inline">
-                        <div class="form-group col-6" >
+                        <div class="form-group col-6">
                             <label>Totales</label>
+                            &nbsp;
                             <span class="form-control">@cobro.Detalle.Count()</span>
                         </div>
 
                         <div class="form-group col-6">
                             <label>Total cobrado</label>
+                            &nbsp;
                             <InputNumber @bind-Value="cobro.TotalCobrado" class="form-control" readOnly="true" />
                             <ValidationMessage For="@(() => cobro.TotalCobrado)" />
                         </div>
@@ -117,18 +122,36 @@
     Cobros cobro = new Cobros();
 
     List<Clientes> ClienteList = new List<Clientes>();
-    List<CobrosDetalle> VentaList = new List<CobrosDetalle>();
 
-    protected override void OnInitialized()
+    [Parameter]
+    public int cobroId { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
         Nuevo();
+        await BuscarParametro();
+    }
+
+    private async Task BuscarParametro()
+    {
+        if(cobroId > 0)
+        {
+            var Cobro = CobrosBLL.Buscar(cobroId);
+
+            if (Cobro != null)
+            {
+                Cobro.Detalle = await VentasBLL.GetVentasCobradas(Cobro.ClienteId);
+                this.cobro = Cobro;
+            }
+            else
+                Toast.ShowError("El cobro no existe");
+        }
     }
 
     private void Nuevo()
     {
         cobro = new Cobros();
         ClienteList = ClientesBLL.GetList(c => true);
-        VentaList = new List<CobrosDetalle>();
         cobro.Fecha = DateTime.Now;
     }
 
@@ -154,10 +177,11 @@
     {
         var Cobro = CobrosBLL.Buscar(cobro.CobroId);
 
-        Cobro.Detalle = await VentasBLL.GetVentasCobradas(Cobro.ClienteId);
-
         if (Cobro != null)
+        {
+            Cobro.Detalle = await VentasBLL.GetVentasCobradas(Cobro.ClienteId);
             this.cobro = Cobro;
+        }
         else
             Toast.ShowError("El cobro no existe");
     }
